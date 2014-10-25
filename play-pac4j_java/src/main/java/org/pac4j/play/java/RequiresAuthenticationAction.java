@@ -28,10 +28,11 @@ import org.pac4j.core.exception.RequiresHttpAction;
 import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.UserProfile;
-import org.pac4j.play.CallbackController;
+import org.pac4j.play.CallbackHandler;
 import org.pac4j.play.Config;
 import org.pac4j.play.Constants;
 import org.pac4j.play.StorageHelper;
+import org.pac4j.play.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,7 +41,6 @@ import play.libs.F.Promise;
 import play.mvc.Action;
 import play.mvc.Http.Context;
 import play.mvc.Result;
-import play.mvc.SimpleResult;
 
 /**
  * This action checks if the user is not authenticated and starts the authentication process if necessary.
@@ -81,7 +81,7 @@ public final class RequiresAuthenticationAction extends Action<Result> {
         final Boolean isAjax = (Boolean) invocationHandler.invoke(this.configuration, isAjaxMethod, null);
         logger.debug("isAjax : {}", isAjax);
         // get or create session id
-        final String sessionId = StorageHelper.getOrCreationSessionId(context.session());
+        final String sessionId = StorageHelper.getOrCreationSessionId(context);
         logger.debug("sessionId : {}", sessionId);
         final CommonProfile profile = StorageHelper.getProfile(sessionId);
         logger.debug("profile : {}", profile);
@@ -91,7 +91,7 @@ public final class RequiresAuthenticationAction extends Action<Result> {
         }
 
         // requested url to save
-        final String requestedUrlToSave = CallbackController.defaultUrl(targetUrl, context.request().uri());
+        final String requestedUrlToSave = Utils.getOrElse(targetUrl, context.request().uri());
         logger.debug("requestedUrlToSave : {}", requestedUrlToSave);
         StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
         // get client
@@ -102,8 +102,7 @@ public final class RequiresAuthenticationAction extends Action<Result> {
             public Result apply() {
                 try {
                     // and compute redirection url
-                    JavaWebContext webContext = new JavaWebContext(context.request(), context.response(), context
-                            .session());
+                    JavaWebContext webContext = new JavaWebContext(context);
                     final RedirectAction action = ((BaseClient) client).getRedirectAction(webContext, true, isAjax);
                     logger.debug("redirectAction : {}", action);
                     return convertToPromise(action);

@@ -18,12 +18,12 @@ package org.pac4j.play.scala;
 import java.util.Map;
 
 import org.pac4j.core.context.WebContext;
-import org.pac4j.play.Constants;
 import org.pac4j.play.StorageHelper;
 
 import play.api.mvc.AnyContent;
 import play.api.mvc.Request;
 import play.api.mvc.Session;
+import play.mvc.Http.Context;
 import scala.Option;
 import scala.collection.Seq;
 
@@ -37,11 +37,8 @@ public class ScalaWebContext<C> implements WebContext {
 
     private final Request<C> request;
 
-    private final Session session;
-
     public ScalaWebContext(final Request<C> request, final Session session) {
         this.request = request;
-        this.session = session;
     }
 
     public String getRequestHeader(final String name) {
@@ -77,7 +74,7 @@ public class ScalaWebContext<C> implements WebContext {
 
     public Object getSessionAttribute(final String key) {
         Object value = null;
-        final Option<String> sessionId = this.session.get(Constants.SESSION_ID);
+        final Option<String> sessionId = Option.apply(StorageHelper.getSessionId(Context.current()));
         if (sessionId.isDefined()) {
             value = StorageHelper.get(sessionId.get(), key);
         }
@@ -89,7 +86,7 @@ public class ScalaWebContext<C> implements WebContext {
     }
 
     public void setSessionAttribute(final String key, final Object value) {
-        final Option<String> sessionId = this.session.get(Constants.SESSION_ID);
+        final Option<String> sessionId = Option.apply(StorageHelper.getSessionId(Context.current()));
         if (sessionId.isDefined()) {
             StorageHelper.save(sessionId.get(), key, value);
         }

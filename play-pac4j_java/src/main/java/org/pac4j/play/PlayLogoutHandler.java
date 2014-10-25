@@ -18,9 +18,10 @@ package org.pac4j.play;
 import org.apache.commons.lang3.StringUtils;
 import org.pac4j.cas.logout.NoLogoutHandler;
 import org.pac4j.core.context.WebContext;
-import org.pac4j.play.java.JavaWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import play.mvc.Http.Context;
 
 /**
  * This class handles logout requests from CAS server.
@@ -47,8 +48,7 @@ public final class PlayLogoutHandler extends NoLogoutHandler {
     @Override
     public void recordSession(final WebContext context, final String ticket) {
         logger.debug("ticket : {}", ticket);
-        final JavaWebContext javaWebContext = (JavaWebContext) context;
-        final String sessionId = javaWebContext.getSession().get(Constants.SESSION_ID);
+        final String sessionId = StorageHelper.getSessionId(Context.current());
         logger.debug("save sessionId : {}", sessionId);
         StorageHelper.save(ticket, sessionId, Config.getProfileTimeout());
     }

@@ -22,12 +22,15 @@ import org.pac4j.core.client.RedirectAction;
 import org.pac4j.core.exception.RequiresHttpAction;
 import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
-import org.pac4j.play.CallbackController;
+import org.pac4j.play.CallbackHandler;
 import org.pac4j.play.Config;
-import org.pac4j.play.Constants;
 import org.pac4j.play.StorageHelper;
+import org.pac4j.play.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import play.mvc.Controller;
+import play.mvc.Http.Context;
 
 /**
  * This controller is the Java controller to retrieve the user profile or the redirection url to start the authentication process.
@@ -35,10 +38,15 @@ import org.slf4j.LoggerFactory;
  * @author Jerome Leleu
  * @since 1.0.0
  */
-public class JavaController extends CallbackController {
+public class JavaControllerHelper extends CallbackHandler {
 
-    protected static final Logger logger = LoggerFactory.getLogger(JavaController.class);
+	private final Logger logger;
 
+    public JavaControllerHelper() {
+    	super();
+    	logger = LoggerFactory.getLogger(getClass());
+	}
+    
     /**
      * This method returns the url of the provider where the user must be redirected for authentication.<br />
      * The current requested url is saved into session to be restored after authentication.
@@ -46,7 +54,7 @@ public class JavaController extends CallbackController {
      * @param clientName
      * @return the url of the provider where to redirect the user
      */
-    protected static RedirectAction getRedirectAction(final String clientName) {
+    public RedirectAction getRedirectAction(final String clientName) {
         return getRedirectAction(clientName, null);
     }
 
@@ -59,11 +67,11 @@ public class JavaController extends CallbackController {
      * @param targetUrl
      * @return the url of the provider where to redirect the user
      */
-    protected static RedirectAction getRedirectAction(final String clientName, final String targetUrl) {
+    public RedirectAction getRedirectAction(final String clientName, final String targetUrl) {
         // get or create session id
-        String sessionId = StorageHelper.getOrCreationSessionId(session());
+        String sessionId = StorageHelper.getOrCreationSessionId(Context.current());
         // requested url to save
-        final String requestedUrlToSave = CallbackController.defaultUrl(targetUrl, request().uri());
+        final String requestedUrlToSave = Utils.getOrElse(targetUrl, Controller.request().uri());
         logger.debug("requestedUrlToSave : {}", requestedUrlToSave);
         StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
         // clients
@@ -73,7 +81,7 @@ public class JavaController extends CallbackController {
             throw new TechnicalException("No client defined. Use Config.setClients(clients)");
         }
         // redirect to the provider for authentication
-        JavaWebContext webContext = new JavaWebContext(request(), response(), session());
+        JavaWebContext webContext = new JavaWebContext(Context.current());
         RedirectAction action = null;
         try {
             action = ((BaseClient) clients.findClient(clientName)).getRedirectAction(webContext, false, false);
@@ -89,9 +97,9 @@ public class JavaController extends CallbackController {
      * 
      * @return the user profile if the user is authenticated or <code>null</code> otherwise
      */
-    protected static CommonProfile getUserProfile() {
+    public CommonProfile getUserProfile() {
         // get the session id
-        final String sessionId = session(Constants.SESSION_ID);
+        final String sessionId = StorageHelper.getSessionId(Context.current());
         logger.debug("sessionId for profile : {}", sessionId);
         if (StringUtils.isNotBlank(sessionId)) {
             // get the user profile

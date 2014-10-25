@@ -141,7 +141,7 @@ trait ScalaController extends Controller {
     val sessionId = newSession.get(Constants.SESSION_ID).get
     logger.debug("sessionId for getRedirectionUrl() : {}", sessionId)
     // save requested url to save
-    val requestedUrlToSave = CallbackController.defaultUrl(targetUrl, request.uri)
+    val requestedUrlToSave = Utils.getOrElse(targetUrl, request.uri)
     logger.debug("requestedUrlToSave : {}", requestedUrlToSave)
     StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
     // context

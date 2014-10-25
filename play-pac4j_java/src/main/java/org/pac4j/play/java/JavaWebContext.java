@@ -20,11 +20,9 @@ import java.util.Map;
 
 import org.pac4j.core.context.BaseResponseContext;
 import org.pac4j.core.util.CommonHelper;
-import org.pac4j.play.Constants;
 import org.pac4j.play.StorageHelper;
 
-import play.mvc.Http.Request;
-import play.mvc.Http.Response;
+import play.mvc.Http.Context;
 import play.mvc.Http.Session;
 
 /**
@@ -35,19 +33,13 @@ import play.mvc.Http.Session;
  */
 public class JavaWebContext extends BaseResponseContext {
 
-    private final Request request;
-
-    private final Response response;
-
-    private final Session session;
-
     // play api does not expose the scheme, just return http for now
     private String scheme = "http";
 
-    public JavaWebContext(final Request request, final Response response, final Session session) {
-        this.request = request;
-        this.response = response;
-        this.session = session;
+	private Context context;
+
+    public JavaWebContext(final Context context) {
+        this.context = context;
     }
 
     public void setScheme(String scheme) {
@@ -55,45 +47,53 @@ public class JavaWebContext extends BaseResponseContext {
     }
 
     public String getRequestHeader(final String name) {
-        return this.request.getHeader(name);
+        return context.request().getHeader(name);
     }
 
     public String getRequestMethod() {
-        return this.request.method();
+        return context.request().method();
     }
 
     public String getRequestParameter(final String name) {
         final Map<String, String[]> parameters = getRequestParameters();
         final String[] values = parameters.get(name);
+
         if (values != null && values.length > 0) {
             return values[0];
         }
+
         return null;
     }
 
     public Map<String, String[]> getRequestParameters() {
-        final Map<String, String[]> formParameters = this.request.body().asFormUrlEncoded();
-        final Map<String, String[]> urlParameters = this.request.queryString();
+        final Map<String, String[]> formParameters = context.request().body().asFormUrlEncoded();
+        final Map<String, String[]> urlParameters = context.request().queryString();
         final Map<String, String[]> parameters = new HashMap<String, String[]>();
+
         if (formParameters != null) {
             parameters.putAll(formParameters);
         }
+
         if (urlParameters != null) {
             parameters.putAll(urlParameters);
         }
+
         return parameters;
     }
 
     public Object getSessionAttribute(final String key) {
-        String sessionId = this.session.get(Constants.SESSION_ID);
+        String sessionId = StorageHelper.getSessionId(Context.current());
+
         if (CommonHelper.isNotBlank(sessionId)) {
             return StorageHelper.get(sessionId, key);
         }
+
         return null;
     }
 
     public void setSessionAttribute(final String key, final Object value) {
-        String sessionId = this.session.get(Constants.SESSION_ID);
+        String sessionId = StorageHelper.getSessionId(Context.current());
+
         if (CommonHelper.isNotBlank(sessionId)) {
             StorageHelper.save(sessionId, key, value);
         }
@@ -101,21 +101,23 @@ public class JavaWebContext extends BaseResponseContext {
 
     @Override
     public void setResponseHeader(final String name, final String value) {
-        this.response.setHeader(name, value);
+        context.response().setHeader(name, value);
     }
 
     public Session getSession() {
-        return this.session;
+        return context.session();
     }
 
     public String getServerName() {
-        String[] split = request.host().split(":");
+        String[] split = context.request().host().split(":");
+
         return split[0];
     }
 
     public int getServerPort() {
-        String[] split = request.host().split(":");
+        String[] split = context.request().host().split(":");
         String portStr = (split.length > 1) ? split[1] : "80";
+
         return Integer.valueOf(portStr);
     }
 
@@ -124,6 +126,6 @@ public class JavaWebContext extends BaseResponseContext {
     }
 
     public String getFullRequestURL() {
-        return getScheme() + "://" + request.host() + request.uri();
+        return getScheme() + "://" + context.request().host() + context.request().uri();
     }
 }

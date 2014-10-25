@@ -21,7 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import play.cache.Cache;
-import play.mvc.Http.Session;
+import play.mvc.Http.Context;
 
 /**
  * This class is an helper to store/retrieve objects (from cache).
@@ -32,16 +32,41 @@ import play.mvc.Http.Session;
 public final class StorageHelper {
     
     private static final Logger logger = LoggerFactory.getLogger(StorageHelper.class);
+
+    /**
+     * Get a session identifier.
+     * 
+     * @param context
+     * @return the session identifier
+     */
+    public static String getSessionId(final Context ctx) {
+    	// get current sessionId
+    	String sessionId = null;
+
+    	String[] authHeaders = ctx.request().headers().get(Constants.HTTP_HEADER);
+
+    	if (authHeaders != null && authHeaders.length > 0) {
+			sessionId = authHeaders[0];
+    	} else {
+    		sessionId = ctx.session().get(Constants.SESSION_ID);
+    	}
+
+    	return sessionId;
+    }
     
+    public static void clearSessionId(final Context ctx) {
+    	ctx.session().remove(Constants.SESSION_ID);
+    }
+
     /**
      * Get a session identifier and generates it if no session exists.
      * 
-     * @param session
+     * @param context
      * @return the session identifier
      */
-    public static String getOrCreationSessionId(final Session session) {
-        // get current sessionId
-        String sessionId = session.get(Constants.SESSION_ID);
+    public static String getOrCreationSessionId(final Context ctx) {
+    	String sessionId = getSessionId(ctx);
+
         logger.debug("retrieved sessionId : {}", sessionId);
         // if null, generate a new one
         if (sessionId == null) {
@@ -49,7 +74,7 @@ public final class StorageHelper {
             sessionId = generateSessionId();
             logger.debug("generated sessionId : {}", sessionId);
             // and save it to session
-            session.put(Constants.SESSION_ID, sessionId);
+            ctx.session().put(Constants.SESSION_ID, sessionId);
         }
         return sessionId;
     }
