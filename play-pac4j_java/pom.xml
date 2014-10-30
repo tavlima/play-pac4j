@@ -36,6 +36,10 @@
 			<groupId>org.pac4j</groupId>
 			<artifactId>pac4j-cas</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.pac4j</groupId>
+			<artifactId>pac4j-oauth</artifactId>
+		</dependency>
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play_2.11</artifactId>

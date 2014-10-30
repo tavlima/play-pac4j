@@ -24,6 +24,7 @@ import org.pac4j.core.credentials.Credentials;
 import org.pac4j.core.exception.RequiresHttpAction;
 import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
+import org.pac4j.oauth.client.FacebookClient;
 import org.pac4j.play.java.JavaWebContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,14 +33,6 @@ import play.mvc.Controller;
 import play.mvc.Http.Context;
 import play.mvc.Result;
 
-/**
- * This controller is the class to finish the authentication process and logout the user.
- * <p />
- * Public methods : {@link #callback()}, {@link #logoutAndOk()} and {@link #logoutAndRedirect()} must be used in the routes file.
- * 
- * @author Jerome Leleu
- * @since 1.0.0
- */
 public class CallbackHandler {
 
 	private static final String CTX_WEBCONTEXT = CallbackHandler.class.getCanonicalName() + "." + "webcontext";
@@ -83,7 +76,7 @@ public class CallbackHandler {
     	Credentials ret = (Credentials) ctx.args.get(CTX_CREDENTIALS);
 
     	if (ret == null) {
-    		ret = getClient(ctx).getCredentials(getWebContext(ctx));
+			ret = getClient(ctx).getCredentials(getWebContext(ctx));
     		ctx.args.put(CTX_CREDENTIALS, ret);
     	}
 
@@ -93,7 +86,23 @@ public class CallbackHandler {
     }
 
 	public CommonProfile getProfile(final Context ctx) throws RequiresHttpAction {
-		return getProfile(ctx, getCredentials(ctx));
+		CommonProfile ret = null;
+		
+		BaseClient<?, ?> client = getClient(ctx);
+
+		if (FacebookClient.class.isInstance(client)) {
+			String accessToken = getWebContext(ctx).getRequestParameter("access_token");
+
+			if (accessToken != null) {
+				ret = FacebookClient.class.cast(client).getUserProfile(accessToken);
+			}
+		}
+
+		if (ret == null) {
+			ret = getProfile(ctx, getCredentials(ctx));
+		}
+		
+		return ret;
 	}
 
 	@SuppressWarnings("unchecked")

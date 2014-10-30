@@ -129,7 +129,7 @@ public final class Config {
     /**
      * Sets the prefix to use for all cache operations
      *
-     * @param cacheKeyPrefix
+     * @param cacheKeyPrefix the new cache prefix
      * @since 1.1.2
      */
     public static void setCacheKeyPrefix(String cacheKeyPrefix) {

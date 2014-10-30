@@ -36,7 +36,7 @@ public final class StorageHelper {
     /**
      * Get a session identifier.
      * 
-     * @param context
+     * @param ctx context
      * @return the session identifier
      */
     public static String getSessionId(final Context ctx) {
@@ -54,6 +54,11 @@ public final class StorageHelper {
     	return sessionId;
     }
     
+    /**
+     * Clear session id
+     * 
+     * @param ctx context
+     */
     public static void clearSessionId(final Context ctx) {
     	ctx.session().remove(Constants.SESSION_ID);
     }
@@ -61,21 +66,25 @@ public final class StorageHelper {
     /**
      * Get a session identifier and generates it if no session exists.
      * 
-     * @param context
+     * @param ctx context
      * @return the session identifier
      */
     public static String getOrCreationSessionId(final Context ctx) {
     	String sessionId = getSessionId(ctx);
 
-        logger.debug("retrieved sessionId : {}", sessionId);
         // if null, generate a new one
         if (sessionId == null) {
             // generate id for session
             sessionId = generateSessionId();
             logger.debug("generated sessionId : {}", sessionId);
+
             // and save it to session
             ctx.session().put(Constants.SESSION_ID, sessionId);
+
+        } else {
+        	logger.debug("retrieved sessionId : {}", sessionId);
         }
+
         return sessionId;
     }
     
@@ -91,7 +100,7 @@ public final class StorageHelper {
     /**
      * Get the profile from storage.
      * 
-     * @param sessionId
+     * @param sessionId PAC4J session id
      * @return the user profile
      */
     public static CommonProfile getProfile(final String sessionId) {
@@ -104,8 +113,8 @@ public final class StorageHelper {
     /**
      * Save a user profile in storage.
      * 
-     * @param sessionId
-     * @param profile
+     * @param sessionId PAC4J session id
+     * @param profile the user profile
      */
     public static void saveProfile(final String sessionId, final CommonProfile profile) {
         if (sessionId != null) {
@@ -116,7 +125,7 @@ public final class StorageHelper {
     /**
      * Remove a user profile from storage.
      * 
-     * @param sessionId
+     * @param sessionId PAC4J session id
      */
     public static void removeProfile(final String sessionId) {
         if (sessionId != null) {
@@ -127,8 +136,8 @@ public final class StorageHelper {
     /**
      * Get a requested url from storage.
      * 
-     * @param sessionId
-     * @param clientName
+     * @param sessionId PAC4J session id
+     * @param clientName client name
      * @return the requested url
      */
     public static String getRequestedUrl(final String sessionId, final String clientName) {
@@ -138,9 +147,9 @@ public final class StorageHelper {
     /**
      * Save a requested url to storage.
      * 
-     * @param sessionId
-     * @param clientName
-     * @param requestedUrl
+     * @param sessionId PAC4J session id
+     * @param clientName client name
+     * @param requestedUrl the requested URL
      */
     public static void saveRequestedUrl(final String sessionId, final String clientName, final String requestedUrl) {
         save(sessionId, clientName + Constants.SEPARATOR + Constants.REQUESTED_URL, requestedUrl);
@@ -149,8 +158,8 @@ public final class StorageHelper {
     /**
      * Get an object from storage.
      * 
-     * @param sessionId
-     * @param key
+     * @param sessionId PAC4J session id
+     * @param key key to retrieve
      * @return the object
      */
     public static Object get(final String sessionId, final String key) {
@@ -163,9 +172,9 @@ public final class StorageHelper {
     /**
      * Save an object in storage.
      * 
-     * @param sessionId
-     * @param key
-     * @param value
+     * @param sessionId PAC4J session id
+     * @param key key to store
+     * @param value object to store
      */
     public static void save(final String sessionId, final String key, final Object value) {
         if (sessionId != null) {
@@ -180,8 +189,8 @@ public final class StorageHelper {
     /**
      * Remove an object in storage.
      * 
-     * @param sessionId
-     * @param key
+     * @param sessionId PAC4J session id
+     * @param key key to remove
      */
     public static void remove(final String sessionId, final String key) {
         remove(sessionId + Constants.SEPARATOR + key);
@@ -190,30 +199,30 @@ public final class StorageHelper {
     /**
      * Get an object from storage.
      * 
-     * @param key
+     * @param key key to restore
      * @return the object
      */
-    public static Object get(final String key) {
+    static Object get(final String key) {
         return Cache.get(getCacheKey(key));
     }
     
     /**
      * Save an object in storage.
      * 
-     * @param key
-     * @param value
-     * @param timeout
+     * @param key key to store
+     * @param value object to store
+     * @param timeout cache validity
      */
-    public static void save(final String key, final Object value, final int timeout) {
+    private static void save(final String key, final Object value, final int timeout) {
         Cache.set(getCacheKey(key), value, timeout);
     }
     
     /**
      * Remove an object from storage.
      * 
-     * @param key
+     * @param key key to remove
      */
-    public static void remove(final String key) {
+    static void remove(final String key) {
         Cache.remove(getCacheKey(key));
     }
 

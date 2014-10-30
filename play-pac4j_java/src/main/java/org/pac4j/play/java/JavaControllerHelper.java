@@ -48,7 +48,7 @@ public class JavaControllerHelper extends CallbackHandler {
 	}
     
     /**
-     * This method returns the url of the provider where the user must be redirected for authentication.<br />
+     * This method returns the url of the provider where the user must be redirected for authentication.
      * The current requested url is saved into session to be restored after authentication.
      * 
      * @param clientName
@@ -59,7 +59,7 @@ public class JavaControllerHelper extends CallbackHandler {
     }
 
     /**
-     * This method returns the url of the provider where the user must be redirected for authentication.<br />
+     * This method returns the url of the provider where the user must be redirected for authentication.
      * The input <code>targetUrl</code> (or the current requested url if <code>null</code>) is saved into session to be restored after
      * authentication.
      * 
