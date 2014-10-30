@@ -19,7 +19,6 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.pac4j.core.client.BaseClient;
-import org.pac4j.core.client.Clients;
 import org.pac4j.core.context.HttpConstants;
 import org.pac4j.core.credentials.Credentials;
 import org.pac4j.core.exception.RequiresHttpAction;
@@ -43,36 +42,118 @@ import play.mvc.Result;
  */
 public class CallbackHandler {
 
-    private final Logger logger;
-	private Clients clientsGroup;
+	private static final String CTX_WEBCONTEXT = CallbackHandler.class.getCanonicalName() + "." + "webcontext";
+	private static final String CTX_CLIENT = CallbackHandler.class.getCanonicalName() + "." + "client";
+	private static final String CTX_CREDENTIALS = CallbackHandler.class.getCanonicalName() + "." + "credentials";
+	private static final String CTX_PROFILE = CallbackHandler.class.getCanonicalName() + "." + "profile";
+	private static final String CTX_REQUESTED_URL = CallbackHandler.class.getCanonicalName() + "." + "requestedurl";;
+
+	private final Logger logger;
 
     public CallbackHandler() {
 		logger = LoggerFactory.getLogger(getClass());
-        clientsGroup = Config.getClients();
 	}
 
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public String callbackHandler(final Context ctx) throws HTTPActionRequiredException, TechnicalException {
-		// web context
-    	final JavaWebContext webContext = new JavaWebContext(ctx);
-    	
-    	// get the client from its type
-    	final BaseClient client = (BaseClient) clientsGroup.findClient(webContext);
-    	logger.debug("client : {}", client);
+    public JavaWebContext getWebContext(final Context ctx) {
+    	JavaWebContext ret = (JavaWebContext) ctx.args.get(CTX_WEBCONTEXT);
 
-    	Credentials credentials = null;
+    	if (ret == null) {
+    		ret = new JavaWebContext(ctx);
+    		ctx.args.put(CTX_WEBCONTEXT, ret);
+    	}
 
+    	return ret;
+    }
+
+    @SuppressWarnings("rawtypes")
+	public BaseClient getClient(final Context ctx) {
+    	BaseClient ret = (BaseClient) ctx.args.get(CTX_CLIENT);
+
+    	if (ret == null) {
+    		ret = (BaseClient) Config.getClients().findClient(getWebContext(ctx));
+    		ctx.args.put(CTX_CLIENT, ret);
+    	}
+
+    	logger.debug("client : {}", ret);
+
+    	return ret;
+    }
+
+	public Credentials getCredentials(final Context ctx) throws RequiresHttpAction {
+    	Credentials ret = (Credentials) ctx.args.get(CTX_CREDENTIALS);
+
+    	if (ret == null) {
+    		ret = getClient(ctx).getCredentials(getWebContext(ctx));
+    		ctx.args.put(CTX_CREDENTIALS, ret);
+    	}
+
+    	logger.debug("credentials : {}", ret);
+
+    	return ret;
+    }
+
+	public CommonProfile getProfile(final Context ctx) throws RequiresHttpAction {
+		return getProfile(ctx, getCredentials(ctx));
+	}
+
+	@SuppressWarnings("unchecked")
+	public CommonProfile getProfile(final Context ctx, final Credentials credentials) {
+		CommonProfile ret = (CommonProfile) ctx.args.get(CTX_PROFILE);
+
+    	if (ret == null) {
+    		ret = getClient(ctx).getUserProfile(credentials, getWebContext(ctx));
+    		ctx.args.put(CTX_PROFILE, ret);
+    	}
+
+    	logger.debug("profile : {}", ret);
+
+    	return ret;
+	}
+
+	public String getRequestedUrl(final Context ctx) {
+		String ret = (String) ctx.args.get(CTX_REQUESTED_URL);
+
+		if (ret == null) {
+			String sessionId = StorageHelper.getOrCreationSessionId(ctx);
+
+			ret = StorageHelper.getRequestedUrl(sessionId, getClient(ctx).getName());
+
+			ctx.args.put(CTX_REQUESTED_URL, ret);
+		}
+
+		logger.debug("requested_url : {}", ret);
+
+		return ret;
+	}
+
+	public CommonProfile callbackHandler(final Context ctx) throws HTTPActionRequiredException, TechnicalException {
+		CommonProfile ret = null;
+		
         try {
-            credentials = client.getCredentials(webContext);
-            logger.debug("credentials : {}", credentials);
+        	// get user profile
+            ret = getProfile(ctx);
+
+            // get or create sessionId
+            final String sessionId = StorageHelper.getOrCreationSessionId(Context.current());
+            logger.debug("session : {}", sessionId);
+
+            // save user profile only if it's not null
+            if (ret != null) {
+                StorageHelper.saveProfile(sessionId, ret);
+            }
 
         } catch (final RequiresHttpAction e) {
-            // requires some specific HTTP action
-            final int code = webContext.getResponseStatus();
+        	/*
+        	 * Isso aqui costumava usar o webContext direto, antes de eu fazer da forma como esta (salvando no contexto)
+        	 * Nao sei se vai prejudicar essa obtencao do response status. Acho que nao. -- Thiago
+        	 * 
+        	 * requires some specific HTTP action
+        	 */
+            final int code = getWebContext(ctx).getResponseStatus();
             logger.debug("requires HTTP action : {}", code);
 
             if (code == HttpConstants.UNAUTHORIZED || code == HttpConstants.TEMP_REDIRECT || code == HttpConstants.OK) {
-            	throw new HTTPActionRequiredException(code, webContext.getResponseContent());
+            	throw new HTTPActionRequiredException(code, getWebContext(ctx).getResponseContent());
 
             } else {
             	final String message = "Unsupported HTTP action : " + code;
@@ -81,23 +162,7 @@ public class CallbackHandler {
             }
         }
 
-        // get user profile
-        final CommonProfile profile = client.getUserProfile(credentials, webContext);
-        logger.debug("profile : {}", profile);
-
-        // get or create sessionId
-        final String sessionId = StorageHelper.getOrCreationSessionId(Context.current());
-        logger.debug("session : {}", sessionId);
-
-        // save user profile only if it's not null
-        if (profile != null) {
-            StorageHelper.saveProfile(sessionId, profile);
-        }
-
-        // get requested url
-        final String requestedUrl = StorageHelper.getRequestedUrl(sessionId, client.getName());
-
-		return requestedUrl;
+		return ret;
 	}
 
     /**

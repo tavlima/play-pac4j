@@ -74,17 +74,23 @@ public final class RequiresAuthenticationAction extends Action<Result> {
     @SuppressWarnings("unchecked")
     public Promise<Result> call(final Context context) throws Throwable {
         final InvocationHandler invocationHandler = Proxy.getInvocationHandler(this.configuration);
+
         final String clientName = (String) invocationHandler.invoke(this.configuration, clientNameMethod, null);
         logger.debug("clientName : {}", clientName);
+
         final String targetUrl = (String) invocationHandler.invoke(this.configuration, targetUrlMethod, null);
         logger.debug("targetUrl : {}", targetUrl);
+
         final Boolean isAjax = (Boolean) invocationHandler.invoke(this.configuration, isAjaxMethod, null);
         logger.debug("isAjax : {}", isAjax);
+        
         // get or create session id
         final String sessionId = StorageHelper.getOrCreationSessionId(context);
         logger.debug("sessionId : {}", sessionId);
+
         final CommonProfile profile = StorageHelper.getProfile(sessionId);
         logger.debug("profile : {}", profile);
+
         // has a profile -> access resource
         if (profile != null) {
             return this.delegate.call(context);
@@ -94,9 +100,11 @@ public final class RequiresAuthenticationAction extends Action<Result> {
         final String requestedUrlToSave = Utils.getOrElse(targetUrl, context.request().uri());
         logger.debug("requestedUrlToSave : {}", requestedUrlToSave);
         StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
+
         // get client
         final Client<Credentials, UserProfile> client = Config.getClients().findClient(clientName);
         logger.debug("client : {}", client);
+
         Promise<Result> promise = Promise.promise(new Function0<Result>() {
             @SuppressWarnings("rawtypes")
             public Result apply() {
@@ -105,16 +113,21 @@ public final class RequiresAuthenticationAction extends Action<Result> {
                     JavaWebContext webContext = new JavaWebContext(context);
                     final RedirectAction action = ((BaseClient) client).getRedirectAction(webContext, true, isAjax);
                     logger.debug("redirectAction : {}", action);
+
                     return convertToPromise(action);
+
                 } catch (final RequiresHttpAction e) {
                     // requires some specific HTTP action
                     final int code = e.getCode();
                     logger.debug("requires HTTP action : {}", code);
+
                     if (code == HttpConstants.UNAUTHORIZED) {
                         return unauthorized(Config.getErrorPage401()).as(Constants.HTML_CONTENT_TYPE);
+
                     } else if (code == HttpConstants.FORBIDDEN) {
                         return forbidden(Config.getErrorPage403()).as(Constants.HTML_CONTENT_TYPE);
                     }
+
                     final String message = "Unsupported HTTP action : " + code;
                     logger.error(message);
                     throw new TechnicalException(message);
