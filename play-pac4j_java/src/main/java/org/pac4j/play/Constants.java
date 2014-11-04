@@ -25,7 +25,7 @@ public interface Constants {
     
     public final static String SESSION_ID = "pac4jSessionId";
     
-    public final static String HTTP_HEADER = "X-Auth-PAC4J";
+    public final static String HTTP_HEADER = "X-Auth-Pac4j";
     
     public final static String REQUESTED_URL = "pac4jRequestedUrl";
     
