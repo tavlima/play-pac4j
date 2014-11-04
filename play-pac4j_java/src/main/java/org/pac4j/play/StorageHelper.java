@@ -91,7 +91,7 @@ public final class StorageHelper {
 		if (sessionId == null) {
 			// generate id for session
 			sessionId = generateSessionId();
-			logger.debug("sessionId created: {}", sessionId);
+			logger.info("sessionId created: {}", sessionId);
 		}
 
 		// save it to session
