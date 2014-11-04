@@ -143,7 +143,7 @@ trait ScalaController extends Controller {
     // save requested url to save
     val requestedUrlToSave = Utils.getOrElse(targetUrl, request.uri)
     logger.debug("requestedUrlToSave : {}", requestedUrlToSave)
-    StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
+    StorageHelper.saveRequestedUrl(sessionId, requestedUrlToSave);
     // context
     val scalaWebContext = new ScalaWebContext(request, newSession)
     // clients
