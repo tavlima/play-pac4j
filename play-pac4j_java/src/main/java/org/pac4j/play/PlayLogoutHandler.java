@@ -47,9 +47,12 @@ public final class PlayLogoutHandler extends NoLogoutHandler {
     
     @Override
     public void recordSession(final WebContext context, final String ticket) {
-        logger.debug("ticket : {}", ticket);
-        final String sessionId = StorageHelper.getSessionId(Context.current());
-        logger.debug("save sessionId : {}", sessionId);
+        logger.debug("ticket: {}", ticket);
+
+        final String sessionId = StorageHelper.getOrCreateSessionId(Context.current());
+        logger.debug("save sessionId: {}", sessionId);
+
+        // TODO check if should be removed from Cache on logout
         StorageHelper.save(ticket, sessionId, Config.getProfileTimeout());
     }
 }

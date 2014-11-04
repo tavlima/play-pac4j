@@ -28,7 +28,6 @@ import org.pac4j.core.exception.RequiresHttpAction;
 import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.core.profile.UserProfile;
-import org.pac4j.play.CallbackHandler;
 import org.pac4j.play.Config;
 import org.pac4j.play.Constants;
 import org.pac4j.play.StorageHelper;
@@ -85,7 +84,7 @@ public final class RequiresAuthenticationAction extends Action<Result> {
         logger.debug("isAjax : {}", isAjax);
         
         // get or create session id
-        final String sessionId = StorageHelper.getOrCreationSessionId(context);
+        final String sessionId = StorageHelper.getOrCreateSessionId(context);
         logger.debug("sessionId : {}", sessionId);
 
         final CommonProfile profile = StorageHelper.getProfile(sessionId);
@@ -99,7 +98,7 @@ public final class RequiresAuthenticationAction extends Action<Result> {
         // requested url to save
         final String requestedUrlToSave = Utils.getOrElse(targetUrl, context.request().uri());
         logger.debug("requestedUrlToSave : {}", requestedUrlToSave);
-        StorageHelper.saveRequestedUrl(sessionId, clientName, requestedUrlToSave);
+        StorageHelper.saveRequestedUrl(sessionId, requestedUrlToSave);
 
         // get client
         final Client<Credentials, UserProfile> client = Config.getClients().findClient(clientName);

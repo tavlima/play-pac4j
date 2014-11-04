@@ -5,7 +5,7 @@
    you may not use this file except in compliance with the License.
    You may obtain a copy of the License at
 
-       http://www.apache.org/licenses/LICENSE-2.0
+	   http://www.apache.org/licenses/LICENSE-2.0
 
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,64 +26,62 @@ import org.pac4j.core.exception.TechnicalException;
 import org.pac4j.core.profile.CommonProfile;
 import org.pac4j.oauth.client.FacebookClient;
 import org.pac4j.play.java.JavaWebContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import play.Logger.ALogger;
 import play.mvc.Controller;
 import play.mvc.Http.Context;
 import play.mvc.Result;
 
-public class CallbackHandler {
+public abstract class CallbackHandler {
 
 	private static final String CTX_WEBCONTEXT = CallbackHandler.class.getCanonicalName() + "." + "webcontext";
 	private static final String CTX_CLIENT = CallbackHandler.class.getCanonicalName() + "." + "client";
 	private static final String CTX_CREDENTIALS = CallbackHandler.class.getCanonicalName() + "." + "credentials";
 	private static final String CTX_PROFILE = CallbackHandler.class.getCanonicalName() + "." + "profile";
-	private static final String CTX_REQUESTED_URL = CallbackHandler.class.getCanonicalName() + "." + "requestedurl";;
+	private static final String CTX_REQUESTED_URL = CallbackHandler.class.getCanonicalName() + "." + "requestedurl";
 
-	private final Logger logger;
+	protected ALogger logger;
 
-    public CallbackHandler() {
-		logger = LoggerFactory.getLogger(getClass());
+	public CallbackHandler() {
 	}
 
-    public JavaWebContext getWebContext(final Context ctx) {
-    	JavaWebContext ret = (JavaWebContext) ctx.args.get(CTX_WEBCONTEXT);
+	public JavaWebContext getWebContext(final Context ctx) {
+		JavaWebContext ret = (JavaWebContext) ctx.args.get(CTX_WEBCONTEXT);
 
-    	if (ret == null) {
-    		ret = new JavaWebContext(ctx);
-    		ctx.args.put(CTX_WEBCONTEXT, ret);
-    	}
+		if (ret == null) {
+			ret = new JavaWebContext(ctx);
+			ctx.args.put(CTX_WEBCONTEXT, ret);
+		}
 
-    	return ret;
-    }
+		return ret;
+	}
 
-    @SuppressWarnings("rawtypes")
+	@SuppressWarnings("rawtypes")
 	public BaseClient getClient(final Context ctx) {
-    	BaseClient ret = (BaseClient) ctx.args.get(CTX_CLIENT);
+		BaseClient ret = (BaseClient) ctx.args.get(CTX_CLIENT);
 
-    	if (ret == null) {
-    		ret = (BaseClient) Config.getClients().findClient(getWebContext(ctx));
-    		ctx.args.put(CTX_CLIENT, ret);
-    	}
+		if (ret == null) {
+			ret = (BaseClient) Config.getClients().findClient(getWebContext(ctx));
+			ctx.args.put(CTX_CLIENT, ret);
+		}
 
-    	logger.debug("client : {}", ret);
+		logger.trace("client: {}", ret);
 
-    	return ret;
-    }
+		return ret;
+	}
 
 	public Credentials getCredentials(final Context ctx) throws RequiresHttpAction {
-    	Credentials ret = (Credentials) ctx.args.get(CTX_CREDENTIALS);
+		Credentials ret = (Credentials) ctx.args.get(CTX_CREDENTIALS);
 
-    	if (ret == null) {
+		if (ret == null) {
 			ret = getClient(ctx).getCredentials(getWebContext(ctx));
-    		ctx.args.put(CTX_CREDENTIALS, ret);
-    	}
+			ctx.args.put(CTX_CREDENTIALS, ret);
+		}
 
-    	logger.debug("credentials : {}", ret);
+		logger.trace("credentials: {}", ret);
 
-    	return ret;
-    }
+		return ret;
+	}
 
 	public CommonProfile getProfile(final Context ctx) throws RequiresHttpAction {
 		CommonProfile ret = null;
@@ -109,116 +107,116 @@ public class CallbackHandler {
 	public CommonProfile getProfile(final Context ctx, final Credentials credentials) {
 		CommonProfile ret = (CommonProfile) ctx.args.get(CTX_PROFILE);
 
-    	if (ret == null) {
-    		ret = getClient(ctx).getUserProfile(credentials, getWebContext(ctx));
-    		ctx.args.put(CTX_PROFILE, ret);
-    	}
+		if (ret == null) {
+			ret = getClient(ctx).getUserProfile(credentials, getWebContext(ctx));
+			ctx.args.put(CTX_PROFILE, ret);
+		}
 
-    	logger.debug("profile : {}", ret);
+		logger.trace("profile: {}", ret);
 
-    	return ret;
+		return ret;
 	}
 
 	public String getRequestedUrl(final Context ctx) {
 		String ret = (String) ctx.args.get(CTX_REQUESTED_URL);
 
 		if (ret == null) {
-			String sessionId = StorageHelper.getOrCreationSessionId(ctx);
+			String sessionId = StorageHelper.getOrCreateSessionId(ctx);
 
 			ret = StorageHelper.getRequestedUrl(sessionId, getClient(ctx).getName());
 
 			ctx.args.put(CTX_REQUESTED_URL, ret);
 		}
 
-		logger.debug("requested_url : {}", ret);
+		logger.trace("requested_url: {}", ret);
 
 		return ret;
 	}
 
 	public CommonProfile callbackHandler(final Context ctx) throws HTTPActionRequiredException, TechnicalException {
 		CommonProfile ret = null;
-		
-        try {
-        	// get user profile
-            ret = getProfile(ctx);
 
-            // get or create sessionId
-            final String sessionId = StorageHelper.getOrCreationSessionId(Context.current());
-            logger.debug("session : {}", sessionId);
+		try {
+			// get user profile
+			ret = getProfile(ctx);
 
-            // save user profile only if it's not null
-            if (ret != null) {
-                StorageHelper.saveProfile(sessionId, ret);
-            }
+			// get or create sessionId
+			final String sessionId = StorageHelper.getOrCreateSessionId(ctx);
 
-        } catch (final RequiresHttpAction e) {
-        	/*
-        	 * Isso aqui costumava usar o webContext direto, antes de eu fazer da forma como esta (salvando no contexto)
-        	 * Nao sei se vai prejudicar essa obtencao do response status. Acho que nao. -- Thiago
-        	 * 
-        	 * requires some specific HTTP action
-        	 */
-            final int code = getWebContext(ctx).getResponseStatus();
-            logger.debug("requires HTTP action : {}", code);
+			// save user profile only if it's not null
+			if (ret != null) {
+				StorageHelper.saveProfile(sessionId, ret);
+			}
 
-            if (code == HttpConstants.UNAUTHORIZED || code == HttpConstants.TEMP_REDIRECT || code == HttpConstants.OK) {
-            	throw new HTTPActionRequiredException(code, getWebContext(ctx).getResponseContent());
+		} catch (final RequiresHttpAction e) {
+			/*
+			 * Isso aqui costumava usar o webContext direto, antes de eu fazer da forma como esta (salvando no contexto)
+			 * Nao sei se vai prejudicar essa obtencao do response status. Acho que nao. -- Thiago
+			 * 
+			 * requires some specific HTTP action
+			 */
+			final int code = getWebContext(ctx).getResponseStatus();
+			logger.trace("requires HTTP action: {}", code);
 
-            } else {
-            	final String message = "Unsupported HTTP action : " + code;
-            	logger.error(message);
-            	throw new TechnicalException(message);
-            }
-        }
+			if (code == HttpConstants.UNAUTHORIZED || code == HttpConstants.TEMP_REDIRECT || code == HttpConstants.OK) {
+				throw new HTTPActionRequiredException(code, getWebContext(ctx).getResponseContent());
+
+			} else {
+				final String message = "Unsupported HTTP action: " + code;
+				logger.error(message);
+				throw new TechnicalException(message);
+			}
+		}
 
 		return ret;
 	}
 
-    /**
-     * This method logouts the authenticated user.
-     */
-    public void logout() {
-        // get the session id
-        final String sessionId = StorageHelper.getSessionId(Context.current());
-        logger.debug("sessionId for logout : {}", sessionId);
-        if (StringUtils.isNotBlank(sessionId)) {
-            // remove user profile from cache
-            StorageHelper.removeProfile(sessionId);
-            logger.debug("remove user profile for sessionId : {}", sessionId);
-        }
-        StorageHelper.clearSessionId(Context.current());
-    }
+	/**
+	 * This method logouts the authenticated user.
+	 */
+	public void logout() {
+		// get the session id
+		final String sessionId = StorageHelper.getOrCreateSessionId(Context.current());
 
-    /**
-     * This method logouts the authenticated user and send him to a blank page.
-     * 
-     * @return the redirection to the blank page
-     */
-    public Result logoutAndOk() {
-        logout();
-        return Controller.ok();
-    }
+		if (StringUtils.isNotBlank(sessionId)) {
+			// remove user profile from cache
+			StorageHelper.removeProfile(sessionId);
+		}
 
-    /**
-     * This method logouts the authenticated user and send him to the url defined in the
-     * {@link Constants#REDIRECT_URL_LOGOUT_PARAMETER_NAME} parameter name or to the <code>defaultLogoutUrl</code>.
-     * This parameter is matched against the {@link Config#getLogoutUrlPattern()}.
-     * 
-     * @return the redirection to the "logout url"
-     */
-    public Result logoutAndRedirect() {
-        logout();
-        // parameters in url
-        final Map<String, String[]> parameters = Controller.request().queryString();
-        final String[] values = parameters.get(Constants.REDIRECT_URL_LOGOUT_PARAMETER_NAME);
-        String value = null;
-        if (values != null && values.length == 1) {
-            String value0 = values[0];
-            // check the url pattern
-            if (Config.getLogoutUrlPattern().matcher(value0).matches()) {
-                value = value0;
-            }
-        }
-        return Controller.redirect(Utils.getOrElse(value, Config.getDefaultLogoutUrl()));
-    }
+		StorageHelper.clearSessionId(Context.current());
+	}
+
+	/**
+	 * This method logouts the authenticated user and send him to a blank page.
+	 * 
+	 * @return the redirection to the blank page
+	 */
+	public Result logoutAndOk() {
+		logout();
+
+		return Controller.ok();
+	}
+
+	/**
+	 * This method logouts the authenticated user and send him to the url defined in the
+	 * {@link Constants#REDIRECT_URL_LOGOUT_PARAMETER_NAME} parameter name or to the <code>defaultLogoutUrl</code>.
+	 * This parameter is matched against the {@link Config#getLogoutUrlPattern()}.
+	 * 
+	 * @return the redirection to the "logout url"
+	 */
+	public Result logoutAndRedirect() {
+		logout();
+		// parameters in url
+		final Map<String, String[]> parameters = Controller.request().queryString();
+		final String[] values = parameters.get(Constants.REDIRECT_URL_LOGOUT_PARAMETER_NAME);
+		String value = null;
+		if (values != null && values.length == 1) {
+			String value0 = values[0];
+			// check the url pattern
+			if (Config.getLogoutUrlPattern().matcher(value0).matches()) {
+				value = value0;
+			}
+		}
+		return Controller.redirect(Utils.getOrElse(value, Config.getDefaultLogoutUrl()));
+	}
 }

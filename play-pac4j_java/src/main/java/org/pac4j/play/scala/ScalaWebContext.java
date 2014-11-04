@@ -88,6 +88,7 @@ public class ScalaWebContext<C> implements WebContext {
     public void setSessionAttribute(final String key, final Object value) {
         final Option<String> sessionId = Option.apply(StorageHelper.getSessionId(Context.current()));
         if (sessionId.isDefined()) {
+        	// TODO check if should be removed from Cache on logout
             StorageHelper.save(sessionId.get(), key, value);
         }
     }

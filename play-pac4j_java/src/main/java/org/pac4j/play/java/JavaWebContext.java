@@ -95,6 +95,7 @@ public class JavaWebContext extends BaseResponseContext {
         String sessionId = StorageHelper.getSessionId(Context.current());
 
         if (CommonHelper.isNotBlank(sessionId)) {
+        	// TODO check if should be removed from Cache on logout
             StorageHelper.save(sessionId, key, value);
         }
     }
