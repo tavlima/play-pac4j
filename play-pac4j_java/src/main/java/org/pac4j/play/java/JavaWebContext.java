@@ -82,7 +82,7 @@ public class JavaWebContext extends BaseResponseContext {
     }
 
     public Object getSessionAttribute(final String key) {
-        String sessionId = StorageHelper.getSessionId(Context.current());
+        String sessionId = StorageHelper.getOrCreateSessionId(Context.current());
 
         if (CommonHelper.isNotBlank(sessionId)) {
             return StorageHelper.get(sessionId, key);
@@ -92,7 +92,7 @@ public class JavaWebContext extends BaseResponseContext {
     }
 
     public void setSessionAttribute(final String key, final Object value) {
-        String sessionId = StorageHelper.getSessionId(Context.current());
+        String sessionId = StorageHelper.getOrCreateSessionId(Context.current());
 
         if (CommonHelper.isNotBlank(sessionId)) {
         	// TODO check if should be removed from Cache on logout
